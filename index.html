@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小心肝計算機 🩺 成人健檢胰島素阻抗與代謝風險評估</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans TC', system-ui, -apple-system, sans-serif;
+            background-color: #f0f4f9;
+        }
+
+        .gradient-header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%);
+        }
+
+        .soft-card {
+            background: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px -5px rgba(99, 102, 241, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .soft-card:hover {
+            box-shadow: 0 15px 35px -5px rgba(99, 102, 241, 0.1);
+        }
+
+        .input-cute {
+            background-color: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 0.85rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .input-cute:focus {
+            background-color: #ffffff;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+            outline: none;
+        }
+
+        .badge-pill {
+            border-radius: 9999px;
+            padding: 0.25rem 0.85rem;
+            font-weight: 700;
+            font-size: 0.75rem;
+        }
+
+        .badge-green { background: #dcfce7; color: #15803d; }
+        .badge-amber { background: #fef3c7; color: #b45309; }
+        .badge-red { background: #ffe4e6; color: #be123c; }
+        .badge-gray { background: #f1f5f9; color: #64748b; }
+
+        /* 位置指針樣式 */
+        .gauge-container {
+            position: relative;
+        }
+        .gauge-marker {
+            position: absolute;
+            top: -6px;
+            transform: translateX(-50%);
+            transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            flex-direction: column;
+            items-center;
+        }
+    </style>
+</head>
+<body class="text-slate-700 pb-16">
+
+    <!-- Cute Banner / Header -->
+    <header class="gradient-header text-white py-8 sm:py-10 px-4 shadow-xl mb-4 sm:mb-8 relative overflow-hidden">
+        <div class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+        <div class="absolute -left-6 -bottom-6 w-40 h-40 bg-pink-500/20 rounded-full blur-3xl"></div>
+        
+        <div class="max-w-4xl mx-auto text-center relative z-10">
+            <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-medium mb-3 text-pink-100">
+                <span>✨ 健檢數據免抽胰島素 · 快速評估</span>
+            </div>
+            <h1 class="text-2xl sm:text-4xl font-extrabold mb-2 sm:mb-3 tracking-tight flex items-center justify-center gap-2 sm:gap-3">
+                <span>🩺</span> 小心肝計算機
+            </h1>
+            
+            <!-- 醫師專屬小標題與連結 -->
+            <div class="mb-3">
+                <a href="https://www.facebook.com/profile.php?id=61584059466555" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-pink-200 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full transition duration-200">
+                    <span>👨‍⚕️</span> 下班後的某宅羊－楊瑋群醫師
+                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-80"></i>
+                </a>
+            </div>
+
+            <p class="text-indigo-100 text-xs sm:text-base max-w-xl mx-auto leading-relaxed">
+                幫您一秒算出 <b>【TyG 胰島素阻抗】</b>、<b>【METS-IR】</b> 與 <b>【代謝症候群風險】</b>！<br/>
+                <span class="text-[11px] sm:text-xs opacity-80">（沒測到的項目可以留空沒關係喔～🌸）</span>
+            </p>
+        </div>
+    </header>
+
+    <!-- 手機端分頁頁籤切換導覽 (僅小螢幕顯示) -->
+    <div class="max-w-4xl mx-auto px-4 mb-4 lg:hidden">
+        <div class="flex rounded-2xl bg-slate-200/80 p-1.5 gap-1">
+            <button id="tab-input-btn" onclick="switchMobileTab('input')" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition duration-200 bg-white text-indigo-600 shadow-sm flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-pen-to-square"></i> 1. 輸入數值
+            </button>
+            <button id="tab-report-btn" onclick="switchMobileTab('report')" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition duration-200 text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-chart-pie"></i> 2. 查看報告
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="max-w-5xl mx-auto px-4">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+            
+            <!-- 左欄：輸入表單 -->
+            <div id="section-input" class="lg:col-span-5 space-y-6">
+                <div class="soft-card p-5 sm:p-6">
+                    <div class="flex items-center justify-between mb-5 border-b pb-3 border-slate-100">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-indigo-500"></i> 輸入健檢數據
+                        </h2>
+                        <button onclick="resetForm()" class="text-xs text-slate-400 hover:text-indigo-600 transition flex items-center gap-1">
+                            <i class="fa-solid fa-rotate-right"></i> 清空
+                        </button>
+                    </div>
+
+                    <form id="healthForm" oninput="calculateAll()" class="space-y-4">
+                        <!-- 基本資料 -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">生理性別</label>
+                                <select id="gender" class="w-full p-2.5 input-cute text-xs sm:text-sm font-medium">
+                                    <option value="male" selected>♂️ 男性</option>
+                                    <option value="female">♀️ 女性</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">年齡 (歲)</label>
+                                <input type="number" id="age" placeholder="例如: 40" class="w-full p-2.5 input-cute text-xs sm:text-sm" min="18" max="120">
+                            </div>
+                        </div>
+
+                        <!-- 體態資料 -->
+                        <div class="space-y-3 pt-2">
+                            <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider">體態數據</p>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">身高 (cm)</label>
+                                    <input type="number" id="height" placeholder="170" step="0.1" class="w-full p-2.5 input-cute text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">體重 (kg)</label>
+                                    <input type="number" id="weight" placeholder="68" step="0.1" class="w-full p-2.5 input-cute text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">腰圍 (cm)</label>
+                                    <input type="number" id="waist" placeholder="82" step="0.1" class="w-full p-2.5 input-cute text-xs">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 血壓量測 -->
+                        <div class="space-y-3 pt-2">
+                            <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider">血壓量測</p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">收縮壓 (mmHg)</label>
+                                    <input type="number" id="sbp" placeholder="120" class="w-full p-2.5 input-cute text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">舒張壓 (mmHg)</label>
+                                    <input type="number" id="dbp" placeholder="80" class="w-full p-2.5 input-cute text-xs">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 抽血數據 -->
+                        <div class="space-y-3 pt-2">
+                            <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider">抽血檢測</p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">空腹血糖 (mg/dL)</label>
+                                    <input type="number" id="fpg" placeholder="95" step="0.1" class="w-full p-2.5 input-cute text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">三酸甘油酯 TG</label>
+                                    <input type="number" id="tg" placeholder="130" step="0.1" class="w-full p-2.5 input-cute text-xs">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="col-span-1">
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">高密度 HDL</label>
+                                    <input type="number" id="hdl" placeholder="45" step="0.1" class="w-full p-2.5 input-cute text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">AST (GOT)</label>
+                                    <input type="number" id="ast" placeholder="25" step="0.1" class="w-full p-2.5 input-cute text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">ALT (GPT)</label>
+                                    <input type="number" id="alt" placeholder="30" step="0.1" class="w-full p-2.5 input-cute text-xs">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 右欄：分析與評估報告 -->
+            <div id="section-report" class="lg:col-span-7 space-y-5 hidden lg:block">
+                
+                <!-- 1. BMI 評估卡片 -->
+                <div class="soft-card p-5 border-l-4 border-l-blue-500">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">BMI</span>
+                            <h3 class="font-bold text-slate-800 text-sm sm:text-base">身體質量指數 (BMI)</h3>
+                        </div>
+                        <span id="bmi-badge" class="badge-pill badge-gray">無法評估</span>
+                    </div>
+                    <div class="flex items-baseline gap-3 my-1">
+                        <span id="bmi-val" class="text-2xl sm:text-3xl font-extrabold text-slate-700">--</span>
+                        <span class="text-xs text-slate-400">kg/m²</span>
+                    </div>
+                    <!-- 評估區間與動態定位指針 -->
+                    <div class="relative pt-4 pb-1">
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex relative">
+                            <div class="bg-blue-300 h-full" style="width: 25%" title="過輕 (<18.5)"></div>
+                            <div class="bg-emerald-400 h-full" style="width: 35%" title="正常 (18.5-23.9)"></div>
+                            <div class="bg-amber-400 h-full" style="width: 15%" title="過重 (24-26.9)"></div>
+                            <div class="bg-rose-400 h-full" style="width: 25%" title="肥胖 (>=27)"></div>
+                        </div>
+                        <!-- 位置標籤與指針 -->
+                        <div id="bmi-pointer" class="gauge-marker hidden" style="left: 0%;">
+                            <span class="text-[10px] font-black bg-slate-800 text-white px-1.5 py-0.5 rounded shadow">您的數值</span>
+                            <i class="fa-solid fa-caret-down text-slate-800 text-xs -mt-1"></i>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                        <span>過輕 (&lt;18.5)</span>
+                        <span>正常 (18.5-23.9)</span>
+                        <span>過重 (24-26.9)</span>
+                        <span>肥胖 (&ge;27)</span>
+                    </div>
+                </div>
+
+                <!-- 2. TyG 胰島素阻抗指數 -->
+                <div class="soft-card p-5 border-l-4 border-l-indigo-500">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">TyG</span>
+                            <h3 class="font-bold text-slate-800 text-sm sm:text-base">TyG 胰島素阻抗指數</h3>
+                        </div>
+                        <span id="tyg-badge" class="badge-pill badge-gray">無法評估</span>
+                    </div>
+                    <div class="flex items-baseline gap-3 my-1">
+                        <span id="tyg-val" class="text-2xl sm:text-3xl font-extrabold text-slate-700">--</span>
+                        <span class="text-xs text-slate-400">參考值: 理想 &lt; 8.5</span>
+                    </div>
+                    
+                    <!-- TyG 動態評估條 -->
+                    <div class="relative pt-4 pb-1">
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex relative">
+                            <div class="bg-emerald-400 h-full" style="width: 45%" title="正常 (<8.5)"></div>
+                            <div class="bg-amber-400 h-full" style="width: 35%" title="警戒區 (8.5-9.5)"></div>
+                            <div class="bg-rose-400 h-full" style="width: 20%" title="高風險 (>9.5)"></div>
+                        </div>
+                        <div id="tyg-pointer" class="gauge-marker hidden" style="left: 0%;">
+                            <span class="text-[10px] font-black bg-slate-800 text-white px-1.5 py-0.5 rounded shadow">您的數值</span>
+                            <i class="fa-solid fa-caret-down text-slate-800 text-xs -mt-1"></i>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                        <span>健康 (&lt;8.5)</span>
+                        <span>警戒區 (8.5-9.5)</span>
+                        <span>高風險 (&gt;9.5)</span>
+                    </div>
+
+                    <p id="tyg-desc" class="text-xs text-slate-500 leading-relaxed mt-2">請輸入「空腹血糖」與「三酸甘油酯」進行評估。</p>
+                </div>
+
+                <!-- 3. METS-IR 綜合代謝指數 -->
+                <div class="soft-card p-5 border-l-4 border-l-purple-500">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs">METS</span>
+                            <h3 class="font-bold text-slate-800 text-sm sm:text-base">METS-IR 綜合代謝指數</h3>
+                        </div>
+                        <span id="mets-badge" class="badge-pill badge-gray">無法評估</span>
+                    </div>
+                    <div class="flex items-baseline gap-3 my-1">
+                        <span id="mets-val" class="text-2xl sm:text-3xl font-extrabold text-slate-700">--</span>
+                        <span class="text-xs text-slate-400">參考區間: &lt; 36 (正常)</span>
+                    </div>
+                    
+                    <!-- 動態評估條與指針 -->
+                    <div class="relative pt-4 pb-1">
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex relative">
+                            <div class="bg-emerald-400 h-full" style="width: 45%" title="正常 (<36)"></div>
+                            <div class="bg-amber-400 h-full" style="width: 35%" title="輕度風險 (36-50)"></div>
+                            <div class="bg-rose-400 h-full" style="width: 20%" title="高風險 (>50)"></div>
+                        </div>
+                        <div id="mets-pointer" class="gauge-marker hidden" style="left: 0%;">
+                            <span class="text-[10px] font-black bg-slate-800 text-white px-1.5 py-0.5 rounded shadow">您的數值</span>
+                            <i class="fa-solid fa-caret-down text-slate-800 text-xs -mt-1"></i>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1 mb-2">
+                        <span>正常 (&lt;36)</span>
+                        <span>輕度風險 (36-50)</span>
+                        <span>高風險 (&gt;50)</span>
+                    </div>
+                    <p id="mets-desc" class="text-xs text-slate-500 leading-relaxed">需要「血糖、三酸甘油酯、BMI、HDL」完整資料計算。</p>
+                </div>
+
+                <!-- 4. AST/ALT 比值 -->
+                <div class="soft-card p-5 border-l-4 border-l-teal-500">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-teal-100 text-teal-600 flex items-center justify-center font-bold text-xs">De Ritis</span>
+                            <h3 class="font-bold text-slate-800 text-sm sm:text-base">AST / ALT 肝功能比值</h3>
+                        </div>
+                        <span id="astalt-badge" class="badge-pill badge-gray">無法評估</span>
+                    </div>
+                    <div class="flex items-baseline gap-3 my-1">
+                        <span id="astalt-val" class="text-2xl sm:text-3xl font-extrabold text-slate-700">--</span>
+                        <span class="text-xs text-slate-400">健康比值約接近 1</span>
+                    </div>
+
+                    <!-- AST/ALT 動態評估條 -->
+                    <div class="relative pt-4 pb-1">
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex relative">
+                            <div class="bg-amber-400 h-full" style="width: 35%" title="ALT偏高 (<0.8)"></div>
+                            <div class="bg-emerald-400 h-full" style="width: 40%" title="正常 (0.8-1.5)"></div>
+                            <div class="bg-indigo-400 h-full" style="width: 25%" title="AST偏高 (>1.5)"></div>
+                        </div>
+                        <div id="astalt-pointer" class="gauge-marker hidden" style="left: 0%;">
+                            <span class="text-[10px] font-black bg-slate-800 text-white px-1.5 py-0.5 rounded shadow">您的數值</span>
+                            <i class="fa-solid fa-caret-down text-slate-800 text-xs -mt-1"></i>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1 mb-2">
+                        <span>ALT偏高 (&lt;0.8)</span>
+                        <span>正常區間 (0.8-1.5)</span>
+                        <span>AST偏高 (&gt;1.5)</span>
+                    </div>
+
+                    <p id="astalt-desc" class="text-xs text-slate-500 leading-relaxed">請填寫 AST 與 ALT 數據以分析非酒精性脂肪肝與肝機能風險。</p>
+                </div>
+
+                <!-- 5. 代謝症候群 5 大指標判定 -->
+                <div class="soft-card p-5 border-l-4 border-l-pink-500">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                            <span>🩺</span> 代謝症候群國健署指標 (符合 <span id="ms-count" class="text-pink-600 font-extrabold">0</span> / 5 項)
+                        </h3>
+                        <span id="ms-badge" class="badge-pill badge-gray">無法評估</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" id="ms-items">
+                        <div class="p-2 rounded-lg bg-slate-50 flex justify-between items-center" id="ms-item-waist">
+                            <span>1. 腹部肥胖 (腰圍)</span>
+                            <span class="font-semibold text-slate-400">未填寫</span>
+                        </div>
+                        <div class="p-2 rounded-lg bg-slate-50 flex justify-between items-center" id="ms-item-bp">
+                            <span>2. 血壓偏高</span>
+                            <span class="font-semibold text-slate-400">未填寫</span>
+                        </div>
+                        <div class="p-2 rounded-lg bg-slate-50 flex justify-between items-center" id="ms-item-fpg">
+                            <span>3. 空腹血糖偏高</span>
+                            <span class="font-semibold text-slate-400">未填寫</span>
+                        </div>
+                        <div class="p-2 rounded-lg bg-slate-50 flex justify-between items-center" id="ms-item-tg">
+                            <span>4. 三酸甘油酯偏高</span>
+                            <span class="font-semibold text-slate-400">未填寫</span>
+                        </div>
+                        <div class="p-2 rounded-lg bg-slate-50 flex justify-between items-center sm:col-span-2" id="ms-item-hdl">
+                            <span>5. 高密度脂蛋白偏低</span>
+                            <span class="font-semibold text-slate-400">未填寫</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. 綜合衛教與改善建議 -->
+                <div class="soft-card p-6 bg-gradient-to-br from-indigo-900 to-slate-900 text-white">
+                    <h3 class="text-base font-bold mb-3 flex items-center gap-2 text-pink-300">
+                        <i class="fa-solid fa-heart-pulse"></i> 綜合風險摘要與量身建議
+                    </h3>
+                    
+                    <!-- 動態異常項目標籤 -->
+                    <div class="mb-4">
+                        <p class="text-xs text-slate-300 mb-2">現階段需關注偏離指標：</p>
+                        <div id="abnormal-tags" class="flex flex-wrap gap-1.5">
+                            <span class="text-xs bg-white/10 text-slate-300 px-2.5 py-1 rounded-full">資料尚未填寫</span>
+                        </div>
+                    </div>
+
+                    <div id="advice-content" class="space-y-3 text-xs leading-relaxed text-slate-200 border-t border-white/10 pt-3">
+                        <p>請於左側輸入您的健康檢查數據，系統將即時為您分析胰島素阻抗風險並提供個人化生活建議。</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function switchMobileTab(tab) {
+            const inputSec = document.getElementById('section-input');
+            const reportSec = document.getElementById('section-report');
+            const inputBtn = document.getElementById('tab-input-btn');
+            const reportBtn = document.getElementById('tab-report-btn');
+
+            if (tab === 'input') {
+                inputSec.classList.remove('hidden');
+                reportSec.classList.add('hidden');
+                inputBtn.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition duration-200 bg-white text-indigo-600 shadow-sm flex items-center justify-center gap-1.5";
+                reportBtn.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition duration-200 text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5";
+            } else {
+                inputSec.classList.add('hidden');
+                reportSec.classList.remove('hidden');
+                reportBtn.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition duration-200 bg-white text-indigo-600 shadow-sm flex items-center justify-center gap-1.5";
+                inputBtn.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition duration-200 text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5";
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('healthForm').reset();
+            calculateAll();
+        }
+
+        function calculateAll() {
+            const gender = document.getElementById('gender').value;
+            const height = parseFloat(document.getElementById('height').value);
+            const weight = parseFloat(document.getElementById('weight').value);
+            const waist = parseFloat(document.getElementById('waist').value);
+            const sbp = parseFloat(document.getElementById('sbp').value);
+            const dbp = parseFloat(document.getElementById('dbp').value);
+            const fpg = parseFloat(document.getElementById('fpg').value);
+            const tg = parseFloat(document.getElementById('tg').value);
+            const hdl = parseFloat(document.getElementById('hdl').value);
+            const ast = parseFloat(document.getElementById('ast').value);
+            const alt = parseFloat(document.getElementById('alt').value);
+
+            let abnormalList = [];
+
+            // 輔助函式：限制百分比在 2% ~ 98% 避免指針超出兩邊
+            const clampPos = (pos) => Math.max(2, Math.min(98, pos));
+
+            // 1. BMI 計算
+            let bmi = null;
+            const bmiPointer = document.getElementById('bmi-pointer');
+            if (!isNaN(height) && !isNaN(weight) && height > 0) {
+                bmi = weight / ((height / 100) ** 2);
+                document.getElementById('bmi-val').innerText = bmi.toFixed(1);
+                
+                const bmiBadge = document.getElementById('bmi-badge');
+                if (bmi < 18.5) {
+                    bmiBadge.className = "badge-pill badge-amber";
+                    bmiBadge.innerText = "體重過輕";
+                    abnormalList.push("BMI過低");
+                } else if (bmi < 24) {
+                    bmiBadge.className = "badge-pill badge-green";
+                    bmiBadge.innerText = "正常範圍";
+                } else if (bmi < 27) {
+                    bmiBadge.className = "badge-pill badge-amber";
+                    bmiBadge.innerText = "過重";
+                    abnormalList.push("BMI過重");
+                } else {
+                    bmiBadge.className = "badge-pill badge-red";
+                    bmiBadge.innerText = "肥胖";
+                    abnormalList.push("BMI肥胖");
+                }
+
+                // 計算指針百分比位置 (範圍 15 ~ 35)
+                let pos = 0;
+                if (bmi <= 18.5) {
+                    pos = (bmi / 18.5) * 25;
+                } else if (bmi <= 24) {
+                    pos = 25 + ((bmi - 18.5) / (24 - 18.5)) * 35;
+                } else if (bmi <= 27) {
+                    pos = 60 + ((bmi - 24) / (27 - 24)) * 15;
+                } else {
+                    pos = 75 + Math.min(1, (bmi - 27) / 10) * 25;
+                }
+                bmiPointer.style.left = `${clampPos(pos)}%`;
+                bmiPointer.classList.remove('hidden');
+            } else {
+                document.getElementById('bmi-val').innerText = "--";
+                document.getElementById('bmi-badge').className = "badge-pill badge-gray";
+                document.getElementById('bmi-badge').innerText = "無法評估";
+                bmiPointer.classList.add('hidden');
+            }
+
+            // 2. TyG 指數
+            const tygPointer = document.getElementById('tyg-pointer');
+            if (!isNaN(fpg) && !isNaN(tg) && fpg > 0 && tg > 0) {
+                const tyg = Math.log((tg * fpg) / 2);
+                document.getElementById('tyg-val').innerText = tyg.toFixed(2);
+                const tygBadge = document.getElementById('tyg-badge');
+                const tygDesc = document.getElementById('tyg-desc');
+                
+                if (tyg < 8.5) {
+                    tygBadge.className = "badge-pill badge-green";
+                    tygBadge.innerText = "健康";
+                    tygDesc.innerText = "您的 TyG 指數正常（< 8.5），代謝狀態相對健康，胰島素敏感度良好。";
+                } else if (tyg <= 9.5) {
+                    tygBadge.className = "badge-pill badge-amber";
+                    tygBadge.innerText = "警戒區";
+                    tygDesc.innerText = "TyG 指數處於警戒區（8.5 – 9.5），建議調整飲食與運動，關注精緻糖與油脂攝取。";
+                    abnormalList.push("TyG位處警戒區");
+                } else {
+                    tygBadge.className = "badge-pill badge-red";
+                    tygBadge.innerText = "高風險區";
+                    tygDesc.innerText = "TyG 指數屬於高風險區（> 9.5），可能有胰島素阻抗、糖尿病前期或脂肪肝風險，建議進一步諮詢醫師。";
+                    abnormalList.push("TyG高風險");
+                }
+
+                // 計算指針百分比 (顯示範圍約 7.5 ~ 10.5)
+                let pos = 0;
+                if (tyg <= 8.5) {
+                    pos = Math.max(0, (tyg - 7.5) / (8.5 - 7.5)) * 45;
+                } else if (tyg <= 9.5) {
+                    pos = 45 + ((tyg - 8.5) / (9.5 - 8.5)) * 35;
+                } else {
+                    pos = 80 + Math.min(1, (tyg - 9.5) / (10.5 - 9.5)) * 20;
+                }
+                tygPointer.style.left = `${clampPos(pos)}%`;
+                tygPointer.classList.remove('hidden');
+            } else {
+                document.getElementById('tyg-val').innerText = "--";
+                document.getElementById('tyg-badge').className = "badge-pill badge-gray";
+                document.getElementById('tyg-badge').innerText = "無法評估";
+                document.getElementById('tyg-desc').innerText = "請輸入「空腹血糖」與「三酸甘油酯」進行評估。";
+                tygPointer.classList.add('hidden');
+            }
+
+            // 3. METS-IR 計算
+            const metsPointer = document.getElementById('mets-pointer');
+            if (!isNaN(fpg) && !isNaN(tg) && !isNaN(hdl) && bmi !== null && hdl > 0) {
+                const metsIR = (Math.log((2 * fpg) + tg) * bmi) / Math.log(hdl);
+                document.getElementById('mets-val').innerText = metsIR.toFixed(1);
+                const metsBadge = document.getElementById('mets-badge');
+                const metsDesc = document.getElementById('mets-desc');
+
+                if (metsIR < 36) {
+                    metsBadge.className = "badge-pill badge-green";
+                    metsBadge.innerText = "正常";
+                    metsDesc.innerText = "METS-IR 低於 36，整體代謝狀況維持良好。";
+                } else if (metsIR <= 50) {
+                    metsBadge.className = "badge-pill badge-amber";
+                    metsBadge.innerText = "輕度風險";
+                    metsDesc.innerText = "METS-IR 介於 36 - 50，代表代謝機能受損風險增加，宜調整飲食。";
+                    abnormalList.push("METS-IR風險");
+                } else {
+                    metsBadge.className = "badge-pill badge-red";
+                    metsBadge.innerText = "高風險";
+                    metsDesc.innerText = "METS-IR > 50，代表代謝症候群與第2型糖尿病潛在風險較高。";
+                    abnormalList.push("METS-IR高風險");
+                }
+
+                // 指針定位 (範圍 20 ~ 65)
+                let pos = 0;
+                if (metsIR <= 36) {
+                    pos = Math.max(0, (metsIR - 20) / (36 - 20)) * 45;
+                } else if (metsIR <= 50) {
+                    pos = 45 + ((metsIR - 36) / (50 - 36)) * 35;
+                } else {
+                    pos = 80 + Math.min(1, (metsIR - 50) / (65 - 50)) * 20;
+                }
+                metsPointer.style.left = `${clampPos(pos)}%`;
+                metsPointer.classList.remove('hidden');
+            } else {
+                document.getElementById('mets-val').innerText = "--";
+                document.getElementById('mets-badge').className = "badge-pill badge-gray";
+                document.getElementById('mets-badge').innerText = "無法評估";
+                document.getElementById('mets-desc').innerText = "需要「血糖、三酸甘油酯、BMI、HDL」完整資料計算。";
+                metsPointer.classList.add('hidden');
+            }
+
+            // 4. AST / ALT 比值
+            const astaltPointer = document.getElementById('astalt-pointer');
+            if (!isNaN(ast) && !isNaN(alt) && alt > 0) {
+                const ratio = ast / alt;
+                document.getElementById('astalt-val').innerText = ratio.toFixed(2);
+                const ratioBadge = document.getElementById('astalt-badge');
+                const ratioDesc = document.getElementById('astalt-desc');
+
+                // 判斷單項肝功能指數是否皆在正常標準值內 (一般臨床參考上限設為 40 U/L)
+                const isNormalAST = ast <= 40;
+                const isNormalALT = alt <= 40;
+
+                if (isNormalAST && isNormalALT) {
+                    // 若 AST 與 ALT 數值本身都在正常範圍內，比值不論高低皆視為正常
+                    ratioBadge.className = "badge-pill badge-green";
+                    ratioBadge.innerText = "肝功能正常";
+                    ratioDesc.innerText = "AST 與 ALT 數值均在標準區間內（<= 40 U/L），肝功能指標良好。";
+                } else if (ratio < 0.8) {
+                    ratioBadge.className = "badge-pill badge-amber";
+                    ratioBadge.innerText = "ALT偏高 (可能脂肪肝)";
+                    ratioDesc.innerText = "ALT 升高較明顯（比值 < 0.8），常與非酒精性脂肪肝病 (NAFLD) 或代謝過載相關。";
+                    abnormalList.push("ALT相對偏高");
+                } else if (ratio <= 1.5) {
+                    ratioBadge.className = "badge-pill badge-green";
+                    ratioBadge.innerText = "比值正常";
+                    ratioDesc.innerText = "AST/ALT 比值在正常範圍內。";
+                } else {
+                    ratioBadge.className = "badge-pill badge-amber";
+                    ratioBadge.innerText = "AST偏高";
+                    ratioDesc.innerText = "AST 相對較高，需留意肌肉損傷、飲酒過量或肝臟細胞狀況。";
+                    abnormalList.push("AST相對偏高");
+                }
+
+                // 指針定位 (0.3 ~ 2.0)
+                let pos = 0;
+                if (ratio <= 0.8) {
+                    pos = Math.max(0, (ratio - 0.3) / (0.8 - 0.3)) * 35;
+                } else if (ratio <= 1.5) {
+                    pos = 35 + ((ratio - 0.8) / (1.5 - 0.8)) * 40;
+                } else {
+                    pos = 75 + Math.min(1, (ratio - 1.5) / (2.0 - 1.5)) * 25;
+                }
+                astaltPointer.style.left = `${clampPos(pos)}%`;
+                astaltPointer.classList.remove('hidden');
+            } else {
+                document.getElementById('astalt-val').innerText = "--";
+                document.getElementById('astalt-badge').className = "badge-pill badge-gray";
+                document.getElementById('astalt-badge').innerText = "無法評估";
+                document.getElementById('astalt-desc').innerText = "請填寫 AST 與 ALT 數據以分析非酒精性脂肪肝與肝機能風險。";
+                astaltPointer.classList.add('hidden');
+            }
+
+            // 5. 代謝症候群 5 大指標判定
+            let msCount = 0;
+            let totalChecked = 0;
+
+            // 1) 腰圍: 男 >= 90cm, 女 >= 80cm
+            const waistElem = document.getElementById('ms-item-waist');
+            if (!isNaN(waist)) {
+                totalChecked++;
+                const isAbnormalWaist = (gender === 'male' && waist >= 90) || (gender === 'female' && waist >= 80);
+                if (isAbnormalWaist) {
+                    msCount++;
+                    waistElem.children[1].className = "font-bold text-rose-500";
+                    waistElem.children[1].innerText = `異常 (${waist} cm)`;
+                    abnormalList.push("腰圍過大");
+                } else {
+                    waistElem.children[1].className = "font-semibold text-emerald-600";
+                    waistElem.children[1].innerText = `正常 (${waist} cm)`;
+                }
+            } else {
+                waistElem.children[1].className = "font-semibold text-slate-400";
+                waistElem.children[1].innerText = "無法評估";
+            }
+
+            // 2) 血壓: 收縮壓 >= 130 或 舒張壓 >= 85
+            const bpElem = document.getElementById('ms-item-bp');
+            if (!isNaN(sbp) || !isNaN(dbp)) {
+                totalChecked++;
+                const isAbnormalBP = (sbp >= 130) || (dbp >= 85);
+                const sbpText = !isNaN(sbp) ? sbp : '--';
+                const dbpText = !isNaN(dbp) ? dbp : '--';
+
+                if (isAbnormalBP) {
+                    msCount++;
+                    bpElem.children[1].className = "font-bold text-rose-500";
+                    bpElem.children[1].innerText = `異常 (${sbpText}/${dbpText})`;
+                    abnormalList.push("血壓偏高");
+                } else {
+                    bpElem.children[1].className = "font-semibold text-emerald-600";
+                    bpElem.children[1].innerText = `正常 (${sbpText}/${dbpText})`;
+                }
+            } else {
+                bpElem.children[1].className = "font-semibold text-slate-400";
+                bpElem.children[1].innerText = "無法評估";
+            }
+
+            // 3) 空腹血糖: >= 100 mg/dL
+            const fpgElem = document.getElementById('ms-item-fpg');
+            if (!isNaN(fpg)) {
+                totalChecked++;
+                if (fpg >= 100) {
+                    msCount++;
+                    fpgElem.children[1].className = "font-bold text-rose-500";
+                    fpgElem.children[1].innerText = `偏高 (${fpg})`;
+                    abnormalList.push("空腹血糖偏高");
+                } else {
+                    fpgElem.children[1].className = "font-semibold text-emerald-600";
+                    fpgElem.children[1].innerText = `正常 (${fpg})`;
+                }
+            } else {
+                fpgElem.children[1].className = "font-semibold text-slate-400";
+                fpgElem.children[1].innerText = "無法評估";
+            }
+
+            // 4) 三酸甘油酯 TG: >= 150 mg/dL
+            const tgElem = document.getElementById('ms-item-tg');
+            if (!isNaN(tg)) {
+                totalChecked++;
+                if (tg >= 150) {
+                    msCount++;
+                    tgElem.children[1].className = "font-bold text-rose-500";
+                    tgElem.children[1].innerText = `偏高 (${tg})`;
+                    abnormalList.push("三酸甘油酯偏高");
+                } else {
+                    tgElem.children[1].className = "font-semibold text-emerald-600";
+                    tgElem.children[1].innerText = `正常 (${tg})`;
+                }
+            } else {
+                tgElem.children[1].className = "font-semibold text-slate-400";
+                tgElem.children[1].innerText = "無法評估";
+            }
+
+            // 5) 高密度脂蛋白 HDL: 男 < 40, 女 < 50 mg/dL
+            const hdlElem = document.getElementById('ms-item-hdl');
+            if (!isNaN(hdl)) {
+                totalChecked++;
+                const isAbnormalHDL = (gender === 'male' && hdl < 40) || (gender === 'female' && hdl < 50);
+                if (isAbnormalHDL) {
+                    msCount++;
+                    hdlElem.children[1].className = "font-bold text-rose-500";
+                    hdlElem.children[1].innerText = `偏低 (${hdl})`;
+                    abnormalList.push("好膽固醇(HDL)偏低");
+                } else {
+                    hdlElem.children[1].className = "font-semibold text-emerald-600";
+                    hdlElem.children[1].innerText = `正常 (${hdl})`;
+                }
+            } else {
+                hdlElem.children[1].className = "font-semibold text-slate-400";
+                hdlElem.children[1].innerText = "無法評估";
+            }
+
+            // 代謝症候群總結
+            const msBadge = document.getElementById('ms-badge');
+            document.getElementById('ms-count').innerText = msCount;
+
+            if (totalChecked === 0) {
+                msBadge.className = "badge-pill badge-gray";
+                msBadge.innerText = "無法評估";
+            } else if (msCount >= 3) {
+                msBadge.className = "badge-pill badge-red";
+                msBadge.innerText = "符合代謝症候群";
+            } else if (msCount >= 1) {
+                msBadge.className = "badge-pill badge-amber";
+                msBadge.innerText = "具偏高風險";
+            } else {
+                msBadge.className = "badge-pill badge-green";
+                msBadge.innerText = "代謝狀態良好";
+            }
+
+            // 6. 綜合異常標籤與衛教建議
+            const abnormalTagsContainer = document.getElementById('abnormal-tags');
+            const adviceContent = document.getElementById('advice-content');
+
+            // 去除重複異常項目
+            const uniqueAbnormals = [...new Set(abnormalList)];
+
+            if (uniqueAbnormals.length > 0) {
+                abnormalTagsContainer.innerHTML = uniqueAbnormals.map(item => 
+                    `<span class="text-xs bg-rose-500/20 text-rose-300 font-medium px-2.5 py-1 rounded-full border border-rose-500/30">⚠️ ${item}</span>`
+                ).join('');
+            } else if (totalChecked > 0) {
+                abnormalTagsContainer.innerHTML = `<span class="text-xs bg-emerald-500/20 text-emerald-300 font-medium px-2.5 py-1 rounded-full border border-emerald-500/30">💚 數值均在正常參考範圍內</span>`;
+            } else {
+                abnormalTagsContainer.innerHTML = `<span class="text-xs bg-white/10 text-slate-300 px-2.5 py-1 rounded-full">資料尚未填寫</span>`;
+            }
+
+            // 依據狀況提供建議
+            if (totalChecked === 0 && isNaN(ast) && isNaN(alt) && isNaN(height)) {
+                adviceContent.innerHTML = `<p>請於左側輸入您的健康檢查數據，系統將即時為您分析胰島素阻抗風險並提供個人化生活建議。</p>`;
+            } else {
+                let dietTips = [];
+                let exerciseTips = [];
+
+                // 根據偏離項目給予多元與精準建議
+                if (uniqueAbnormals.some(a => a.includes("BMI") || a.includes("腰圍"))) {
+                    dietTips.push("<b>控制總熱量與碳水</b>：落實 211 餐盤（1/2 蔬菜、1/4 原型蛋白質、1/4 原型澱粉），減少內臟脂肪。");
+                    exerciseTips.push("<b>增加骨骼肌量</b>：每週進行 2-3 次大肌群阻力訓練（如深蹲、硬舉），肌肉是體內處置血糖最大的器官。");
+                }
+
+                if (uniqueAbnormals.some(a => a.includes("TyG") || a.includes("METS-IR") || a.includes("血糖"))) {
+                    dietTips.push("<b>嚴格戒除果糖與精緻糖</b>：手搖飲與加工點心會迅速誘發胰島素激增，加速胰島素阻抗；改以低 GI 原型食物為主。");
+                    exerciseTips.push("<b>餐後 15 分鐘輕度運動</b>：餐後散步 10-20 分鐘能幫助肌肉直接利用血糖，免除胰島素過度分泌負擔。");
+                }
+
+                if (uniqueAbnormals.some(a => a.includes("ALT") || a.includes("AST"))) {
+                    dietTips.push("<b>護肝避開酒精與果糖</b>：非酒精性脂肪肝主要是過多果糖與精緻澱粉在肝臟轉化為油脂，需盡量避免酒精及高果糖糖漿。");
+                    exerciseTips.push("<b>消滅肝臟脂肪</b>：每週 150 分鐘中等強度有氧運動（如快走、騎車、游泳）對減少肝臟脂肪有實證效果。");
+                }
+
+                if (uniqueAbnormals.some(a => a.includes("三酸甘油酯"))) {
+                    dietTips.push("<b>補充 Omega-3 脂肪酸</b>：增加深海魚類（鮭魚、鯖魚）或植物性好油（橄欖油、苦茶油），避開反式脂肪與過量飽和脂肪。");
+                }
+
+                if (uniqueAbnormals.some(a => a.includes("血壓"))) {
+                    dietTips.push("<b>採行得舒(DASH)飲食策略</b>：多攝取高鉀蔬菜與堅果，控制鈉鹽攝取（每日少於 6 公克）。");
+                    exerciseTips.push("<b>規律有氧降低血管阻力</b>：保持有氧運動習慣有助於血管彈性改善與血壓穩定。");
+                }
+
+                if (uniqueAbnormals.some(a => a.includes("HDL"))) {
+                    dietTips.push("<b>提升好膽固醇</b>：多攝取好油脂與富含可溶性膳食纖維食物（燕麥、豆類）。");
+                    exerciseTips.push("<b>戒菸與高強度運動</b>：戒菸並配合高強度間歇或持續有氧運動是提高 HDL-C 的有效途徑。");
+                }
+
+                // 預設綜合基礎建議（當指標大體正常時）
+                if (dietTips.length === 0) {
+                    dietTips.push("<b>維持均衡原型飲食</b>：持續維持優質蛋白質與高纖蔬菜攝取，減少加工食品。");
+                }
+                if (exerciseTips.length === 0) {
+                    exerciseTips.push("<b>維持規律運動習慣</b>：每週維持至少 150 分鐘中等強度運動，並確保充足高質量睡眠。");
+                }
+
+                adviceContent.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/10">
+                            <h4 class="font-bold text-pink-300 text-xs mb-1.5 flex items-center gap-1">
+                                <span>🥗</span> 針對您健檢結果的【個人化飲食策略】：
+                            </h4>
+                            <ul class="text-slate-300 text-[11px] leading-relaxed space-y-1 list-disc list-inside">
+                                ${dietTips.map(tip => `<li>${tip}</li>`).join('')}
+                            </ul>
+                        </div>
+
+                        <div class="bg-white/5 p-3 rounded-xl border border-white/10">
+                            <h4 class="font-bold text-indigo-300 text-xs mb-1.5 flex items-center gap-1">
+                                <span>🏋️‍♂️</span> 針對您健檢結果的【運動與生活調整】：
+                            </h4>
+                            <ul class="text-slate-300 text-[11px] leading-relaxed space-y-1 list-disc list-inside">
+                                ${exerciseTips.map(tip => `<li>${tip}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 初始化計算
+        calculateAll();
+    </script>
+</body>
+</html>
